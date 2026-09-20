@@ -65,7 +65,7 @@ function TeamOverviewSection({
               {members.map(({ membership, user }) => (
                 <Link
                   key={membership.id}
-                  href={`/workspace/${user.uid}`}
+                  href={`/workspace/${user.uid}?teamId=${encodeURIComponent(team.id)}`}
                   className="flex min-w-0 items-center gap-3 rounded-xl border border-transparent bg-muted/50 px-3 py-2.5 text-sm text-foreground outline-none transition-colors hover:border-border hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
                 >
                   {user.photoURL ? (

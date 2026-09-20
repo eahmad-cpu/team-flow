@@ -17,17 +17,19 @@ function getInitials(displayName: string): string {
 }
 
 export function TeamMemberLink({
+  teamId,
   user,
   isActive,
   onSelect,
 }: {
+  teamId: string;
   user: User;
   isActive: boolean;
   onSelect?: () => void;
 }) {
   return (
     <Link
-      href={`/workspace/${user.uid}`}
+      href={`/workspace/${user.uid}?teamId=${encodeURIComponent(teamId)}`}
       aria-current={isActive ? "page" : undefined}
       onClick={() => onSelect?.()}
       className={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 ${

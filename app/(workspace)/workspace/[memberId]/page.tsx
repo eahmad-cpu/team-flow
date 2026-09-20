@@ -2,7 +2,7 @@
 
 import { LoaderCircle, ShieldAlert, TriangleAlert, UserRoundX } from "lucide-react";
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { MemberWorkspaceHeader } from "@/components/team/member-workspace-header";
 import { MemberWorkspaceTabs } from "@/components/team/member-workspace-tabs";
@@ -34,7 +34,10 @@ function WorkspaceStatus({
 
 function MemberWorkspaceContent() {
   const { memberId } = useParams<{ memberId: string }>();
-  const { member, canAccess, error, isLoading } = useMemberWorkspace(memberId);
+  const searchParams = useSearchParams();
+  const requestedTeamId = searchParams.get("teamId");
+  const { member, canAccess, error, isLoading, workspaceTeamId } =
+    useMemberWorkspace(memberId, requestedTeamId);
 
   if (isLoading) {
     return (
@@ -77,11 +80,21 @@ function MemberWorkspaceContent() {
     );
   }
 
+  if (!workspaceTeamId) {
+    return (
+      <WorkspaceStatus
+        icon={<ShieldAlert aria-hidden="true" className="size-6" />}
+        title="تعذر تحديد الفريق"
+        description="تحتاج مساحة العمل إلى فريق محدد لعرض البيانات دون خلط بيانات الفرق."
+      />
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-5xl">
         <MemberWorkspaceHeader member={member} />
-        <MemberWorkspaceTabs />
+        <MemberWorkspaceTabs teamId={workspaceTeamId} memberId={memberId} />
       </div>
     </main>
   );

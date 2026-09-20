@@ -1,51 +1,22 @@
 "use client";
 
-import { CalendarDays, LoaderCircle, Map } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { CalendarDays, Map } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { RoadmapBoard } from "@/components/roadmap/roadmap-board/roadmap-board";
 import { DailyTasksView } from "@/components/tasks/daily-tasks-view";
-import { useAuth } from "@/hooks/auth/use-auth";
-import { useMemberWorkspace } from "@/hooks/team/use-member-workspace";
 
 type WorkspaceTab = "daily-tasks" | "roadmap";
 
-function WorkspaceTabPanel({ activeTab }: { activeTab: WorkspaceTab }) {
-  const { memberId } = useParams<{ memberId: string }>();
-  const { memberships } = useAuth();
-  const { isLoading, isSelf, sharedTeamId } = useMemberWorkspace(memberId);
-  const selfTeamIds = [
-    ...new Set(
-      memberships
-        .filter((membership) => membership.active)
-        .map((membership) => membership.teamId),
-    ),
-  ];
-  const selfTeamId = isSelf && selfTeamIds.length === 1 ? selfTeamIds[0] : null;
-  const teamId = sharedTeamId ?? selfTeamId;
-
-  if (isLoading) {
-    return (
-      <section className="flex min-h-48 items-center justify-center rounded-2xl border border-border/70 bg-card p-5">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-          جارٍ تجهيز مساحة العمل
-        </div>
-      </section>
-    );
-  }
-
-  if (!teamId) {
-    return (
-      <section className="rounded-2xl border border-border/70 bg-card p-5 text-center">
-        <h2 className="text-sm font-bold text-foreground">تعذر تحديد الفريق</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          تحتاج مساحة العمل إلى فريق محدد لعرض البيانات دون خلط بيانات الفرق.
-        </p>
-      </section>
-    );
-  }
-
+function WorkspaceTabPanel({
+  activeTab,
+  teamId,
+  memberId,
+}: {
+  activeTab: WorkspaceTab;
+  teamId: string;
+  memberId: string;
+}) {
   return activeTab === "daily-tasks" ? (
     <DailyTasksView teamId={teamId} memberId={memberId} />
   ) : (
@@ -53,10 +24,15 @@ function WorkspaceTabPanel({ activeTab }: { activeTab: WorkspaceTab }) {
   );
 }
 
-export function MemberWorkspaceTabs() {
+export function MemberWorkspaceTabs({
+  teamId,
+  memberId,
+}: {
+  teamId: string;
+  memberId: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { memberId } = useParams<{ memberId: string }>();
   const activeTab: WorkspaceTab =
     searchParams.get("tab") === "roadmap" ? "roadmap" : "daily-tasks";
 
@@ -113,7 +89,11 @@ export function MemberWorkspaceTabs() {
         aria-labelledby={activeTab === "daily-tasks" ? "daily-tasks-tab" : "roadmap-tab"}
         className="mt-5"
       >
-        <WorkspaceTabPanel activeTab={activeTab} />
+        <WorkspaceTabPanel
+          activeTab={activeTab}
+          teamId={teamId}
+          memberId={memberId}
+        />
       </div>
     </section>
   );

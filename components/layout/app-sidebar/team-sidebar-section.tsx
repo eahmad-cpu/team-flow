@@ -46,6 +46,7 @@ export function TeamSidebarSection({
             members.map(({ membership, user }) => (
               <TeamMemberLink
                 key={membership.id}
+                teamId={team.id}
                 user={user}
                 isActive={user.uid === activeMemberId}
                 onSelect={onMemberSelect}

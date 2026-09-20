@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getMembershipById } from "@/lib/firestore/memberships";
+import { getTeamMembers } from "@/lib/firestore/memberships";
 import { getUserById } from "@/lib/firestore/users";
 import { useAuth } from "@/hooks/auth/use-auth";
+import type { Membership } from "@/types/membership";
 import type { User } from "@/types/user";
 
 function toError(error: unknown): Error {
@@ -13,12 +14,27 @@ function toError(error: unknown): Error {
     : new Error("Unable to load member workspace.");
 }
 
-export function useMemberWorkspace(memberId: string) {
-  const { user: currentUser, leaderMemberships } = useAuth();
+function hasActiveLeaderMembershipForTeam(
+  memberships: Membership[],
+  teamId: string,
+): boolean {
+  return memberships.some(
+    (membership) =>
+      membership.teamId === teamId &&
+      membership.role === "LEADER" &&
+      membership.active,
+  );
+}
+
+export function useMemberWorkspace(
+  memberId: string,
+  requestedTeamId: string | null,
+) {
+  const { user: currentUser, memberships, leaderMemberships } = useAuth();
   const [member, setMember] = useState<User | null>(null);
   const [isSelf, setIsSelf] = useState(false);
   const [canAccess, setCanAccess] = useState(false);
-  const [sharedTeamId, setSharedTeamId] = useState<string | null>(null);
+  const [workspaceTeamId, setWorkspaceTeamId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const requestIdRef = useRef(0);
@@ -31,7 +47,7 @@ export function useMemberWorkspace(memberId: string) {
     setMember(null);
     setIsSelf(accessingSelf);
     setCanAccess(false);
-    setSharedTeamId(null);
+    setWorkspaceTeamId(null);
     setIsLoading(true);
     setError(null);
 
@@ -53,9 +69,24 @@ export function useMemberWorkspace(memberId: string) {
         return;
       }
 
+      const activeTeamIds = [
+        ...new Set(
+          memberships
+            .filter((membership) => membership.active)
+            .map((membership) => membership.teamId),
+        ),
+      ];
+      const selfTeamId =
+        requestedTeamId && activeTeamIds.includes(requestedTeamId)
+          ? requestedTeamId
+          : activeTeamIds.length === 1
+            ? activeTeamIds[0]
+            : null;
+
       if (accessingSelf) {
         setMember(targetMember);
         setCanAccess(true);
+        setWorkspaceTeamId(selfTeamId);
         setIsLoading(false);
         return;
       }
@@ -67,20 +98,25 @@ export function useMemberWorkspace(memberId: string) {
             .map((membership) => membership.teamId),
         ),
       ];
-      let validSharedTeamId: string | null = null;
+      const candidateTeamIds = requestedTeamId
+        ? hasActiveLeaderMembershipForTeam(
+            leaderMemberships,
+            requestedTeamId,
+          )
+          ? [requestedTeamId]
+          : []
+        : leaderTeamIds;
+      let validWorkspaceTeamId: string | null = null;
 
-      for (const teamId of leaderTeamIds) {
-        const targetMembership = await getMembershipById(teamId, memberId);
+      for (const teamId of candidateTeamIds) {
+        const teamMembers = await getTeamMembers(teamId);
 
         if (requestId !== requestIdRef.current) {
           return;
         }
 
-        if (
-          targetMembership?.active &&
-          targetMembership.role === "MEMBER"
-        ) {
-          validSharedTeamId = teamId;
+        if (teamMembers.some((membership) => membership.userId === memberId)) {
+          validWorkspaceTeamId = teamId;
           break;
         }
       }
@@ -90,8 +126,8 @@ export function useMemberWorkspace(memberId: string) {
       }
 
       setMember(targetMember);
-      setCanAccess(validSharedTeamId !== null);
-      setSharedTeamId(validSharedTeamId);
+      setCanAccess(validWorkspaceTeamId !== null);
+      setWorkspaceTeamId(validWorkspaceTeamId);
       setIsLoading(false);
     } catch (loadError) {
       if (requestId !== requestIdRef.current) {
@@ -100,11 +136,17 @@ export function useMemberWorkspace(memberId: string) {
 
       setMember(null);
       setCanAccess(false);
-      setSharedTeamId(null);
+      setWorkspaceTeamId(null);
       setError(toError(loadError));
       setIsLoading(false);
     }
-  }, [currentUser?.uid, leaderMemberships, memberId]);
+  }, [
+    currentUser?.uid,
+    leaderMemberships,
+    memberId,
+    memberships,
+    requestedTeamId,
+  ]);
 
   useEffect(() => {
     void loadMemberWorkspace();
@@ -118,7 +160,7 @@ export function useMemberWorkspace(memberId: string) {
     member,
     isSelf,
     canAccess,
-    sharedTeamId,
+    workspaceTeamId,
     isLoading,
     error,
     refresh: loadMemberWorkspace,
