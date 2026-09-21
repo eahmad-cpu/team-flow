@@ -61,7 +61,7 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(getTodayDate);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
-  const [orderedTodayGroupIds, setOrderedTodayGroupIds] = useState<string[]>([]);
+  const [orderedVisibleGroupIds, setOrderedVisibleGroupIds] = useState<string[]>([]);
   const [isReorderingGroups, setIsReorderingGroups] = useState(false);
   const {
     date,
@@ -82,31 +82,23 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-  const todayGroups = useMemo(
-    () => groups.filter((groupView) => groupView.group.originalDate === date),
-    [date, groups],
-  );
-  const historicalGroups = useMemo(
-    () => groups.filter((groupView) => groupView.group.originalDate !== date),
-    [date, groups],
-  );
-  const todayGroupKey = todayGroups
+  const visibleGroupKey = groups
     .map((groupView) => `${groupView.group.id}:${groupView.group.order}`)
     .join("|");
-  const todayGroupsById = useMemo(
-    () => new Map(todayGroups.map((groupView) => [groupView.group.id, groupView])),
-    [todayGroups],
+  const visibleGroupsById = useMemo(
+    () => new Map(groups.map((groupView) => [groupView.group.id, groupView])),
+    [groups],
   );
-  const displayedTodayGroups = orderedTodayGroupIds
-    .map((groupId) => todayGroupsById.get(groupId))
+  const displayedGroups = orderedVisibleGroupIds
+    .map((groupId) => visibleGroupsById.get(groupId))
     .filter(
       (groupView): groupView is DailyTaskGroupView => groupView !== undefined,
     );
   const todayDate = getTodayDate();
 
   useEffect(() => {
-    setOrderedTodayGroupIds(todayGroups.map((groupView) => groupView.group.id));
-  }, [todayGroupKey, todayGroups]);
+    setOrderedVisibleGroupIds(groups.map((groupView) => groupView.group.id));
+  }, [groups, visibleGroupKey]);
 
   async function handleGroupDragEnd({ active, over }: DragEndEvent): Promise<void> {
     if (!over || active.id === over.id || !user || isReorderingGroups) {
@@ -115,10 +107,10 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
 
     const activeGroupId = String(active.id).replace(/^group:/, "");
     const overGroupId = String(over.id).replace(/^group:/, "");
-    const oldIndex = displayedTodayGroups.findIndex(
+    const oldIndex = displayedGroups.findIndex(
       (groupView) => groupView.group.id === activeGroupId,
     );
-    const newIndex = displayedTodayGroups.findIndex(
+    const newIndex = displayedGroups.findIndex(
       (groupView) => groupView.group.id === overGroupId,
     );
 
@@ -126,7 +118,7 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
       return;
     }
 
-    const reorderedGroups = arrayMove(displayedTodayGroups, oldIndex, newIndex);
+    const reorderedGroups = arrayMove(displayedGroups, oldIndex, newIndex);
     const updates = reorderedGroups
       .map((groupView, index) => ({
         group: groupView.group,
@@ -138,7 +130,7 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
       return;
     }
 
-    setOrderedTodayGroupIds(reorderedGroups.map((groupView) => groupView.group.id));
+    setOrderedVisibleGroupIds(reorderedGroups.map((groupView) => groupView.group.id));
     setIsReorderingGroups(true);
 
     try {
@@ -149,7 +141,7 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
       );
       await refresh();
     } catch {
-      setOrderedTodayGroupIds(todayGroups.map((groupView) => groupView.group.id));
+      setOrderedVisibleGroupIds(groups.map((groupView) => groupView.group.id));
       toast.error("تعذر حفظ الترتيب");
     } finally {
       setIsReorderingGroups(false);
@@ -264,13 +256,13 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
 
       <DndContext sensors={groupSensors} onDragEnd={handleGroupDragEnd}>
         <SortableContext
-          items={displayedTodayGroups.map(
+          items={displayedGroups.map(
             (groupView) => `group:${groupView.group.id}`,
           )}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-3">
-            {displayedTodayGroups.map((groupView) => (
+            {displayedGroups.map((groupView) => (
               <TaskGroupSection
                 key={groupView.group.id}
                 groupView={groupView}
@@ -280,16 +272,6 @@ export function DailyTasksView({ teamId, memberId }: DailyTasksViewProps) {
                 onChanged={refresh}
                 sortable={!isReorderingGroups}
                 isGroupReordering={isReorderingGroups}
-              />
-            ))}
-            {historicalGroups.map((groupView) => (
-              <TaskGroupSection
-                key={groupView.group.id}
-                groupView={groupView}
-                selectedDate={date}
-                groups={groups}
-                getNextTaskOrder={getNextTaskOrder}
-                onChanged={refresh}
               />
             ))}
           </div>

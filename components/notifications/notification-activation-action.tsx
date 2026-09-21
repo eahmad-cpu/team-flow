@@ -14,7 +14,11 @@ import {
   type PushNotificationSetupStatus,
 } from "@/lib/notifications/fcm";
 
-export function FloatingNotificationActivation() {
+export function NotificationActivationAction({
+  className,
+}: {
+  className?: string;
+}) {
   const { hasAppAccess } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [setupStatus, setSetupStatus] = useState<PushNotificationSetupStatus>(
@@ -30,6 +34,7 @@ export function FloatingNotificationActivation() {
 
     syncPermission();
     window.addEventListener("team-flow-notification-permission-change", syncPermission);
+
     return () => {
       window.removeEventListener(
         "team-flow-notification-permission-change",
@@ -44,7 +49,9 @@ export function FloatingNotificationActivation() {
   );
 
   useEffect(() => {
-    if (!shouldConfirmSuccessRef.current) return;
+    if (!shouldConfirmSuccessRef.current) {
+      return;
+    }
 
     if (setupStatus === "registered") {
       shouldConfirmSuccessRef.current = false;
@@ -72,10 +79,14 @@ export function FloatingNotificationActivation() {
     setupStatus !== "unsupported" &&
     !isStartupSynchronizing;
 
-  if (!shouldShow) return null;
+  if (!shouldShow) {
+    return null;
+  }
 
   async function activate(): Promise<void> {
-    if (isActivating) return;
+    if (isActivating) {
+      return;
+    }
 
     shouldConfirmSuccessRef.current = true;
     setIsActivating(true);
@@ -93,6 +104,7 @@ export function FloatingNotificationActivation() {
         window.dispatchEvent(
           new Event("team-flow-notification-permission-change"),
         );
+
         if (nextPermission !== "granted") {
           shouldConfirmSuccessRef.current = false;
           setIsActivating(false);
@@ -114,26 +126,24 @@ export function FloatingNotificationActivation() {
   const isRetry = permission === "granted" && setupStatus === "error";
 
   return (
-    <div className="fixed inset-x-4 bottom-4 z-40 sm:inset-x-auto sm:bottom-6 sm:left-6">
-      <Button
-        type="button"
-        size="lg"
-        className="h-12 w-full gap-2 rounded-2xl px-5 shadow-lg sm:w-auto"
-        onClick={() => void activate()}
-        disabled={isActivating}
-        aria-busy={isActivating}
-      >
-        {isActivating ? (
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-        ) : (
-          <BellRing aria-hidden="true" className="size-4" />
-        )}
-        {isActivating
-          ? "جارٍ تفعيل الإشعارات..."
-          : isRetry
-            ? "إعادة تفعيل الإشعارات"
-            : "تفعيل الإشعارات"}
-      </Button>
-    </div>
+    <Button
+      type="button"
+      size="sm"
+      className={`gap-2 rounded-xl ${className ?? ""}`}
+      onClick={() => void activate()}
+      disabled={isActivating}
+      aria-busy={isActivating}
+    >
+      {isActivating ? (
+        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+      ) : (
+        <BellRing aria-hidden="true" className="size-4" />
+      )}
+      {isActivating
+        ? "جارٍ تفعيل الإشعارات..."
+        : isRetry
+          ? "إعادة تفعيل الإشعارات"
+          : "تفعيل الإشعارات"}
+    </Button>
   );
 }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationActivationAction } from "@/components/notifications/notification-activation-action";
 import { InstallButton } from "@/components/pwa/install-button";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { ThemeToggle } from "@/components/layout/app-header/theme-toggle";
@@ -64,6 +65,7 @@ export function AppHeader() {
         </div>
 
         <div className="order-3 flex basis-full gap-2 empty:hidden sm:contents">
+          <NotificationActivationAction className="h-11 min-w-0 flex-1 justify-center text-sm sm:h-8 sm:flex-none" />
           <InstallButton
             className="h-11 min-w-0 flex-1 justify-center text-sm sm:h-8 sm:flex-none"
             showLabel
