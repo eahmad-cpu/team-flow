@@ -156,23 +156,6 @@ export function useDailyTasks(
           isHistorical: group.originalDate < date,
         }))
         .sort((firstGroup, secondGroup) => {
-          const firstIsToday = firstGroup.group.originalDate === date;
-          const secondIsToday = secondGroup.group.originalDate === date;
-
-          if (firstIsToday !== secondIsToday) {
-            return firstIsToday ? -1 : 1;
-          }
-
-          if (!firstIsToday) {
-            const dateDifference = firstGroup.group.originalDate.localeCompare(
-              secondGroup.group.originalDate,
-            );
-
-            if (dateDifference !== 0) {
-              return dateDifference;
-            }
-          }
-
           const orderDifference = firstGroup.group.order - secondGroup.group.order;
 
           return orderDifference !== 0
