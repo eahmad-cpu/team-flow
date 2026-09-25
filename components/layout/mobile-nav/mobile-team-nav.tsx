@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -12,11 +12,13 @@ export function MobileTeamNav({
   isLoading,
   hasError,
   activeMemberId,
+  showAdminLink,
 }: {
   teams: LeaderTeamView[];
   isLoading: boolean;
   hasError: boolean;
   activeMemberId?: string;
+  showAdminLink: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -87,6 +89,16 @@ export function MobileTeamNav({
             </header>
 
             <div className="flex-1 overflow-y-auto px-3 py-3">
+              {showAdminLink ? (
+                <Link
+                  href="/workspace/admin"
+                  className="mb-3 flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-semibold text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Settings aria-hidden="true" className="size-4 text-primary" />
+                  إدارة الفرق والمستخدمين
+                </Link>
+              ) : null}
               {isLoading ? (
                 <p className="px-2.5 py-3 text-sm text-muted-foreground">
                   جارٍ تحميل فرق العمل

@@ -45,3 +45,4 @@ next-env.d.ts
 node_modules
 
 scripts/seeds/add-executive-team-members.cjs
+scripts/seeds

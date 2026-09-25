@@ -1,11 +1,12 @@
 "use client";
 
-import { LoaderCircle, UsersRound } from "lucide-react";
+import { LoaderCircle, Settings, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { TeamSidebarSection } from "@/components/layout/app-sidebar/team-sidebar-section";
 import { MobileTeamNav } from "@/components/layout/mobile-nav/mobile-team-nav";
+import { isAdminEmail } from "@/lib/admin/access";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useLeaderTeams } from "@/hooks/team/use-leader-teams";
 
@@ -21,10 +22,11 @@ function getActiveMemberId(pathname: string): string | undefined {
 
 export function TeamSidebar() {
   const pathname = usePathname();
-  const { leadsAnyTeam } = useAuth();
+  const { firebaseUser, leadsAnyTeam } = useAuth();
   const { teams, isLoading, error } = useLeaderTeams();
+  const showAdminLink = isAdminEmail(firebaseUser?.email);
 
-  if (!leadsAnyTeam) {
+  if (!leadsAnyTeam && !showAdminLink) {
     return null;
   }
 
@@ -37,6 +39,7 @@ export function TeamSidebar() {
         isLoading={isLoading}
         hasError={error !== null}
         activeMemberId={activeMemberId}
+        showAdminLink={showAdminLink}
       />
 
       <aside className="hidden w-72 shrink-0 flex-col border-l border-border/70 bg-card lg:sticky lg:top-0 lg:flex lg:h-dvh">
@@ -53,6 +56,15 @@ export function TeamSidebar() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-3 py-3">
+          {showAdminLink ? (
+            <Link
+              href="/workspace/admin"
+              className="mb-3 flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-semibold text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
+            >
+              <Settings aria-hidden="true" className="size-4 text-primary" />
+              إدارة الفرق والمستخدمين
+            </Link>
+          ) : null}
           {isLoading ? (
             <div className="flex items-center gap-2 px-2.5 py-3 text-sm text-muted-foreground">
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
